@@ -1,6 +1,8 @@
 comment("
 fred_download.r:
-Download the FRED data file with the indicated Series ID.
+Download the FRED data file with the indicated Series ID and transform it to a data frame.
+Optionally save the data frame to disk.
+Return the data frame.
 
 To run from the command line:
 Rscript fred_download.r series_id
@@ -45,7 +47,7 @@ fred_download = function(series_id, save=TRUE) {
 }
 
 #If run from the command line user must provide the Series ID as argument.
-#Example command line invocation: rscript fred_download.r DEXUSEU
+#Example command line invocation: Rscript fred_download.r DEXUSEU
 if (!interactive()) {
 	series_id = commandArgs(trailingOnly=TRUE)
 	stopifnot(length(series_id) == 1)

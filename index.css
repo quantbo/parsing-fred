@@ -11,6 +11,10 @@ a {
 	font-weight: normal;
 	text-decoration: none;
 }
+/* When a link is one or a few characters it needs to be brighter in order to call attention to itself.*/
+a.short {
+	color: rgb(50, 50, 255);  
+}
 a:hover {
 	color: orange;
 }
