@@ -1,0 +1,99 @@
+/*
+index.css:
+Top level CSS.
+Link to this ahead of CSS relevant to a specific project.
+
+A NOTE ON THE FILENAME
+I originally named this file '_top.css'. If a filename begins with an underscore it is ignored by Jekyll, used by GitHub Pages. To avoid this and perhaps similar mishaps do not begin file names for use in web development with an underscore.
+*/
+a {
+	color: rgb(50, 50, 170);
+	font-weight: normal;
+	text-decoration: none;
+}
+a:hover {
+	color: orange;
+}
+body {
+	font-weight: normal;
+	width: 8.5in;
+	margin: 0 auto;
+}
+button {
+	border-radius: 4px;
+	font-size: 1.1em;
+	margin-bottom: 0.5em;
+	margin-top: -0.1em;
+	box-shadow: 0.1em 0.1em;
+}
+code {
+	font-size: 1.2em;
+}
+h1, h2, h3, h4 {
+	font-family: Roboto, sans-serif;
+	font-weight: lighter;	
+}
+h1 {
+	border: solid rgba(0, 0, 128, 0.25);
+	border-width: 1px;
+	padding: 0.25em;
+	text-align: center;
+}
+ol, ul {
+	font-size: 1.2em;
+}
+li {
+  margin-bottom: 0.5em;
+}
+li p {
+	font-size: inherit;
+}
+p {
+	font-size: 1.2em;
+	line-height: 1.3em;
+}
+pre {
+	font-size: 1.2em;
+	font-weight: lighter;
+}
+/*A centered image. Place the img element within a div assigned this class.*/
+div.centered-image {
+	margin-top: -1em;
+	text-align: center;
+}
+/* To provide a form a relatively unobtrusive title, place a span element with class form_title just below the opening form tag. */
+span.form_title {
+  display: block;
+  font-family: sans-serif;
+  font-size: 1.1em;
+  margin-bottom: 0.5em;
+}
+/*Executive summary.*/
+.exec-summ {
+	margin-bottom: 0.5em;
+	margin-left: 1.5em;
+	margin-right: 1.5em;
+	margin-top: 0.5em;
+}
+/*Reference:
+https://developer.mozilla.org/en-US/docs/Web/CSS/::before
+*/
+.exec-summ:before, .exec-summ::before {
+	content: 'SUMMARY: ';
+}
+/*A mathematical expression.*/
+.math {
+	background-color: rgba(0, 0, 128, 0.01);
+	padding-bottom: 0.75em;
+	padding-top: 0.75em;
+	text-indent: 3em;
+}
+/*Place a notice of the publication date after h1 and before the introductory paragraph.*/
+/*Place a copyright notice at the bottom of the page.*/
+#copyright, #pub {
+	font-size: 1.1em;
+	font-style: italic;	
+}
+#copyright {
+  padding-top: 15px;
+}

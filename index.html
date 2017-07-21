@@ -1,0 +1,115 @@
+<!-- Show how to download a FRED data file and transform it to an R data frame and save it as a CSV file. -->
+<!doctype html>
+<head>
+  <title>Parsing FRED</title>
+
+  <!-- Google font(s). Must precede 'index.css'. -->
+  <!-- Headers: h1, h2, etc. -->
+  <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+  
+  <link rel=stylesheet type="text/css" href="index.css"/>
+</head>
+<body>
+  <h1>Parsing FRED</h1>
+  <p id='pub'>Published: 2017-07-21</p>
+  <p class='exec-summ'>How to download and parse FRED data files.</p>
+  <p>The website of the Federal Reserve Bank of St. Louis, known as <a href='https://fred.stlouisfed.org/' target="_blank">FRED</a>, provides an incredible trove of free time series data. How can a programmer download and parse these data?</p>
+  <p>If you are coding in Javascript you might expect to use CORS or JSONP to access the data; however, your expectations are likely to be frustrated. When I last corresponded with the webmaster, in late 2016, I was informed that FRED does not support CORS or JSONP, though they hope to provide support in the future. I have not noticed any relevant announcements since then.</p>
+  <p>Given that this is the case my preferred method of accessing FRED data is to download and parse it using <a href='https://www.r-project.org/' target="_blank">R</a>.</p>
+  <p>Each FRED data file has a Series ID that can find by searching FRED. For example, if you are interested in the Thailand / US currency daily exchange rate, enter "Thailand / US" in the FRED search box. The search box will suggest "Thailand / U.S. Foreign Exchange Rate". Select that and various times series are displayed. In the left-hand column click on "Thailand" and on "Daily" and the relevant time series appears on the right. Click on it to exhibit the chart. There you will note that the Series ID for the Thai Baht / US Dollar daily exchange rate is <code>DEXTHUS</code>. For a given Series ID the data file lives at the following URL:</p>
+<pre>
+https://fred.stlouisfed.org/data/SERIES_ID.txt  
+</pre>
+  <p>If FRED data were plain vanilla CSV files downloading and parsing the data could be accomplished in one line of R code by applying the R function <code>read.csv</code> applied to the above URL. However, FRED data files are little complicated. They have introductory text preceding the data, and the number of lines taken up by the text varies from one data file to another. For example, here is the beginning of the Thai Baht / US Dollar exchange rate daily time series:</p>
+<pre>
+Title:               Thailand / U.S. Foreign Exchange Rate
+Series ID:           DEXTHUS
+Source:              Board of Governors of the Federal Reserve System (US)
+Release:             H.10 Foreign Exchange Rates
+Seasonal Adjustment: Not Seasonally Adjusted
+Frequency:           Daily
+Units:               Thai Baht to One U.S. Dollar
+Date Range:          1981-01-02 to 2017-07-14
+Last Updated:        2017-07-17 4:31 PM CDT
+Notes:               Noon buying rates in New York City for cable transfers payable in
+                     foreign currencies.
+
+DATE          VALUE
+1981-01-02  20.6611
+1981-01-05  20.6611
+1981-01-06  20.6611
+[...]
+</pre>
+  <p>The introductory material shown above occupies 12 lines. For the monthly times series the introductory material occupies 27 lines. For 1-Month LIBOR the introductory material occupies 31 lines. And so on. The point is that if we are going to parse these files we can't simply skip the first <code>N</code> lines, because <code>N</code> varies from file to file.</p>
+  <h2>A sampling of FRED pages</h2>
+  <p>Herewith a small sampling of FRED data pages:</p>
+  <ul>
+    <li><a href='https://fred.stlouisfed.org/data/DEXTHUS.txt' target="_blank">Thailand / U.S. Foreign Exchange Rate [Daily]</a></li>
+    <li><a href='https://fred.stlouisfed.org/data/EXTHUS.txt' target="_blank">Thailand / U.S. Foreign Exchange Rate [Monthly]</a></li>
+    <li><a href='https://fred.stlouisfed.org/data/DEXUSEU.txt' target="_blank">U.S. / Euro Foreign Exchange Rate [Daily]</a></li>
+    <li><a href='https://fred.stlouisfed.org/data/USD1MTD156N.txt' target="_blank">1-Month London Interbank Offered Rate (LIBOR), based on U.S. Dollar©</a></li>
+    <li><a href='https://fred.stlouisfed.org/data/GBP1MTD156N.txt' target="_blank">1-Month London Interbank Offered Rate (LIBOR), based on British Pound©</a></li>
+    <li><a href='https://fred.stlouisfed.org/data/JPY1MTD156N.txt' target="_blank">1-Month London Interbank Offered Rate (LIBOR), based on Japanese Yen©</a></li>
+    <li><a href='https://fred.stlouisfed.org/data/A939RX0Q048SBEA.txt' target="_blank">Real gross domestic product per capita</a></li>
+  </ul>
+  <p>If you click on these you'll observe one thing that is consistent. All the data files have two columns of data and the columns are labelled <code>DATE</code> and <code>VALUE</code>. This provides a hook to skip the introductory material and go straight to the data. We can do this with the following R command:</p>
+<pre>
+#Find the line containing the data headers.
+idx = grep('^DATE[ ]+VALUE$', txt)
+</pre>
+  <p>The preceding regular expression seeks a line that begins with <code>DATE</code>, is followed by one or more space characters, and ends with <code>VALUE</code>. It places the line number in <code>idx</code>, short for "index". With this line number in hand we are in a position to skip the introductory material and parse the data. A full program for doing this is exhibited below.</p>
+  <h2>Program code</h2>
+<pre>
+comment("
+fred_download.r:
+Download the FRED data file with the indicated Series ID.
+
+To run from the command line:
+Rscript fred_download.r series_id
+")
+
+fred_download = function(series_id) {
+  #series_id: A FRED series ID. Example: A939RX0Q048SBEA (Real gross domestic product per capita).
+
+  #URL template. Replace XXX with series_id.
+  urlx = 'https://fred.stlouisfed.org/data/XXX.txt'
+
+  url = sub('XXX', series_id, urlx)
+
+  #The data are preceded by explanatory text.
+  #The number of lines of text varies across Series ID.
+  #Consequently, it is necessary to begin by reading the url as a text file.
+  txt = readLines(url) #A character vector.
+  #Find the line containing the data headers.
+  idx = grep('^DATE[ ]+VALUE$', txt)
+  stopifnot(length(idx) == 1) #Should be unique.
+  #Transform to data frame.
+  conn = textConnection(txt)
+  dfr = read.table(conn, skip=idx, na.strings='.')
+  close(conn)
+  names(dfr) = c('DATE', 'VALUE')
+
+  #The 'read.table' function should have automatically parsed the VALUE field as numeric.
+  stopifnot(class(dfr$VALUE) == 'numeric')
+  #Convert the DATE field from character to Date.
+  dfr$DATE = as.Date(dfr$DATE)
+
+  #Save to disk.
+  file = paste(series_id, '.csv', sep='')
+  write.csv(dfr, file=file, row.names=FALSE)
+
+  #Return the data frame.
+  return(invisible(dfr))
+}
+
+#If run from the command line user must provide the Series ID as argument.
+#Example command line invocation: rscript fred_download.r DEXUSEU
+if (!interactive()) {
+  series_id = commandArgs(trailingOnly=TRUE)
+  stopifnot(length(series_id) == 1)
+  fred_download(series_id)
+}  
+</pre>
+  
+  <p id=copyright>Copyright (C) 2017, John Van Praag</p>
+</body>
