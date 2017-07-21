@@ -6,8 +6,9 @@ To run from the command line:
 Rscript fred_download.r series_id
 ")
 
-fred_download = function(series_id) {
+fred_download = function(series_id, save=TRUE) {
   #series_id: A FRED series ID. Example: A939RX0Q048SBEA (Real gross domestic product per capita).
+  #save: If TRUE, save the data to disk as a CSV file. The file is named 'series_id.csv'.
 
   #URL template. Replace XXX with series_id.
   urlx = 'https://fred.stlouisfed.org/data/XXX.txt'
@@ -27,14 +28,17 @@ fred_download = function(series_id) {
 	close(conn)
 	names(dfr) = c('DATE', 'VALUE')
 
-	#The 'read.table' function should have automatically parsed the VALUE field as numeric.
-	stopifnot(class(dfr$VALUE) == 'numeric')
+  #The 'read.table' function should have automatically parsed the VALUE field as numeric or integer.
+  #The call to mode covers both of these possibilities.
+  stopifnot(mode(dfr$VALUE) == 'numeric')
 	#Convert the DATE field from character to Date.
 	dfr$DATE = as.Date(dfr$DATE)
 
 	#Save to disk.
-	file = paste(series_id, '.csv', sep='')
-	write.csv(dfr, file=file, row.names=FALSE)
+	if (save) {
+		file = paste(series_id, '.csv', sep='')
+		write.csv(dfr, file=file, row.names=FALSE)		
+	}
 
 	#Return the data frame.
 	return(invisible(dfr))

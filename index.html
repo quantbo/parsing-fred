@@ -57,7 +57,23 @@ DATE          VALUE
 #Find the line containing the data headers.
 idx = grep('^DATE[ ]+VALUE$', txt)
 </pre>
-  <p>The preceding regular expression seeks a line that begins with <code>DATE</code>, is followed by one or more space characters, and ends with <code>VALUE</code>. It places the line number in <code>idx</code>, short for "index". With this line number in hand we are in a position to skip the introductory material and parse the data. A full program for doing this is exhibited below.</p>
+  <p>The preceding regular expression seeks a line that begins with <code>DATE</code>, is followed by one or more space characters, and ends with <code>VALUE</code>. It places the line number in <code>idx</code>, short for "index". With this line number in hand we are in a position to skip the introductory material and parse the data.</p>
+
+  <h2>Text to data</h2>
+  <p>There is one other subtlety that we must address. Because FRED data files begin with multiple lines of text they must be downloaded as text files. In R a text file is represented as a character array, that is, an array of strings. After determining how many lines of text to skip, how can we conveniently turn the text into data? The solution is to convert the text into a <code>textConnection</code> that can be read by the the <code>read.table</code> function:</p>
+<pre>
+txt = readLines(url) #A character vector.
+#Find the line containing the data headers.
+idx = grep('^DATE[ ]+VALUE$', txt)
+stopifnot(length(idx) == 1) #Should be unique.
+#Transform to data frame.
+conn = textConnection(txt)
+dfr = read.table(conn, skip=idx, na.strings='.')
+close(conn)
+</pre>
+  <p>The <code>read.table</code> function specifies <code>na.strings='.'</code>. This is another thing that appears to be consistent across FRED data files, viz, that missing data are indicated by a period.</p>
+  <p>We are now in a position to subject the data frame (<code>dfr</code> in the code shown above) to data analysis, graphing, or combining with other data.</p>
+  <p>A full program for downloading and parsing FRED data, optionally saving it to disk, and returning it to a calling program is exhibited below.</p>
   <h2>Program code</h2>
 <pre>
 comment("
@@ -68,8 +84,9 @@ To run from the command line:
 Rscript fred_download.r series_id
 ")
 
-fred_download = function(series_id) {
+fred_download = function(series_id, save=TRUE) {
   #series_id: A FRED series ID. Example: A939RX0Q048SBEA (Real gross domestic product per capita).
+  #save: If TRUE, save the data to disk as a CSV file. The file is named 'series_id.csv'.
 
   #URL template. Replace XXX with series_id.
   urlx = 'https://fred.stlouisfed.org/data/XXX.txt'
@@ -89,14 +106,17 @@ fred_download = function(series_id) {
   close(conn)
   names(dfr) = c('DATE', 'VALUE')
 
-  #The 'read.table' function should have automatically parsed the VALUE field as numeric.
-  stopifnot(class(dfr$VALUE) == 'numeric')
+  #The 'read.table' function should have automatically parsed the VALUE field as numeric or integer.
+  #The call to mode covers both of these possibilities.
+  stopifnot(mode(dfr$VALUE) == 'numeric')
   #Convert the DATE field from character to Date.
   dfr$DATE = as.Date(dfr$DATE)
 
   #Save to disk.
-  file = paste(series_id, '.csv', sep='')
-  write.csv(dfr, file=file, row.names=FALSE)
+  if (save) {
+    file = paste(series_id, '.csv', sep='')
+    write.csv(dfr, file=file, row.names=FALSE)    
+  }
 
   #Return the data frame.
   return(invisible(dfr))
@@ -108,7 +128,7 @@ if (!interactive()) {
   series_id = commandArgs(trailingOnly=TRUE)
   stopifnot(length(series_id) == 1)
   fred_download(series_id)
-}  
+}
 </pre>
   
   <p id=copyright>Copyright (C) 2017, John Van Praag</p>
